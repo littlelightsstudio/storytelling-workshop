@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Little Lights — Workshop</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&display=swap" rel="stylesheet">
+<script src="./client.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --blue: #22528e;
+  --font: 'Satoshi', 'Helvetica Neue', system-ui, sans-serif;
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  font-family: var(--font);
+  height: 100vh;
+  transition: background 0.4s ease, color 0.4s ease;
+  user-select: none;
+}
+
+/* ── THEMES ─────────────────────────────────────────────── */
+
+body.dark {
+  background: #22528e;
+  --text:    #ffffff;
+  --text-2:  rgba(255,255,255,0.68);
+  --text-3:  rgba(255,255,255,0.36);
+  --surface: rgba(255,255,255,0.1);
+  --border:  rgba(255,255,255,0.15);
+  --border-2:rgba(255,255,255,0.3);
+  --arrow:   rgba(255,255,255,0.28);
+  --arrow-h: rgba(255,255,255,1);
+  --rule:    rgba(255,255,255,0.5);
+  --accent:  rgba(255,255,255,0.85);
+  --prog:    rgba(255,255,255,0.75);
+  --ctx-bg:  rgba(255,255,255,0.08);
+  --ctx-bar: rgba(255,255,255,0.55);
+}
+
+body.light {
+  background: #F4F5F9;
+  --text:    #1B1E29;
+  --text-2:  rgba(27,30,41,0.62);
+  --text-3:  rgba(27,30,41,0.32);
+  --surface: #ffffff;
+  --border:  rgba(27,30,41,0.09);
+  --border-2:rgba(27,30,41,0.22);
+  --arrow:   rgba(27,30,41,0.2);
+  --arrow-h: #1B1E29;
+  --rule:    #22528e;
+  --accent:  #22528e;
+  --prog:    #22528e;
+  --ctx-bg:  #ffffff;
+  --ctx-bar: #22528e;
+}
+
+/* ── CHROME ─────────────────────────────────────────────── */
+
+.logo {
+  position: fixed;
+  top: 26px;
+  left: 32px;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  transition: color 0.4s;
+}
+
+.logo-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--rule);
+  flex-shrink: 0;
+  transition: background 0.4s;
+}
+
+.client-name {
+  position: fixed;
+  top: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 300;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  transition: color 0.4s;
+}
+
+/* Theme toggle */
+.switcher {
+  position: fixed;
+  top: 18px;
+  right: 24px;
+  z-index: 300;
+  display: flex;
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: 40px;
+  padding: 3px;
+  gap: 2px;
+  transition: background 0.4s, border-color 0.4s;
+}
+
+.sw-btn {
+  padding: 5px 16px;
+  border-radius: 36px;
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  font-family: var(--font);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.22s ease;
+}
+
+.sw-btn.active {
+  background: var(--blue);
+  color: #fff;
+}
+
+/* Nav arrows */
+.nav {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 300;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 20px 10px;
+  color: var(--arrow);
+  transition: color 0.2s ease;
+}
+
+.nav:hover { color: var(--arrow-h); }
+
+.nav:active {
+  transform: translateY(-50%) scale(0.9);
+  transition: transform 0.1s ease, color 0.2s ease;
+}
+
+.nav-l { left: 4px; }
+.nav-r { right: 4px; }
+
+.nav svg {
+  display: block;
+  width: 28px;
+  height: 28px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Keyboard hint */
+.key-hint {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  transition: color 0.4s, opacity 0.4s;
+}
+
+.key-hint.hidden { opacity: 0; }
+
+.kbkey {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--border-2);
+  border-radius: 4px;
+  font-size: 10px;
+  color: var(--text-3);
+  margin-right: 3px;
+}
+
+/* Progress */
+.progress {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: var(--prog);
+  transition: width 0.45s var(--ease);
+  z-index: 300;
+}
+
+.counter {
+  position: fixed;
+  bottom: 18px;
+  right: 32px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--text-3);
+  z-index: 300;
+  transition: color 0.4s;
+  font-weight: 500;
+}
+
+/* ── SLIDES ─────────────────────────────────────────────── */
+
+#slides {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 120px;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.36s var(--ease), transform 0.36s var(--ease);
+  pointer-events: none;
+}
+
+.slide.on {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: all;
+}
+
+.slide.exit {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.22s var(--ease), transform 0.22s var(--ease);
+}
+
+/* ── SLIDE TYPES ─────────────────────────────────────────── */
+
+/* CLAIM */
+.s-claim { text-align: center; }
+
+.claim-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 28px;
+  transition: color 0.4s;
+}
+
+.claim-rule {
+  width: 28px;
+  height: 2px;
+  background: var(--rule);
+  margin: 0 auto 32px;
+  transition: background 0.4s;
+}
+
+.claim-text {
+  font-size: clamp(22px, 2.8vw, 42px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.22;
+  color: var(--text);
+  max-width: 800px;
+  transition: color 0.4s;
+}
+
+.claim-text em {
+  font-style: normal;
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-color: rgba(255,255,255,0.3);
+  text-underline-offset: 5px;
+  transition: color 0.4s;
+}
+
+body.light .claim-text em {
+  text-decoration-color: rgba(34,82,142,0.3);
+}
+
+/* PRES SLIDE */
+.s-pres { text-align: left; align-items: flex-start; }
+
+.s-pres-inner {
+  max-width: 680px;
+  width: 100%;
+}
+
+.pres-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 20px;
+}
+
+.pres-h {
+  font-size: clamp(28px, 3.4vw, 52px);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  color: var(--text);
+  margin-bottom: 24px;
+  transition: color 0.4s;
+}
+
+.pres-body {
+  font-size: 16px;
+  font-weight: 300;
+  color: var(--text-2);
+  line-height: 1.8;
+  margin-bottom: 24px;
+  white-space: pre-line;
+  transition: color 0.4s;
+}
+
+.pres-callout {
+  padding: 16px 20px;
+  border-left: 2px solid var(--ctx-bar);
+  background: var(--ctx-bg);
+  font-size: 14px;
+  color: var(--text-2);
+  line-height: 1.75;
+  transition: all 0.4s;
+}
+
+.pres-example-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 10px;
+}
+
+.pres-example-text {
+  font-size: 14px;
+  font-weight: 300;
+  color: var(--text-2);
+  line-height: 1.78;
+  padding: 14px 18px;
+  border-left: 2px solid var(--ctx-bar);
+  background: var(--ctx-bg);
+  white-space: pre-line;
+  transition: all 0.4s;
+}
+
+/* VIDEO SLIDE */
+.s-video { text-align: left; align-items: flex-start; }
+
+.video-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  width: 100%;
+  max-width: 860px;
+}
+
+.video-item {}
+
+.video-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  margin-bottom: 8px;
+}
+
+.video-el {
+  width: 100%;
+  border-radius: 6px;
+  display: block;
+  background: rgba(0,0,0,0.2);
+  margin-bottom: 10px;
+  max-height: 180px;
+  object-fit: cover;
+}
+
+.video-desc {
+  font-size: 12px;
+  font-weight: 300;
+  color: var(--text-3);
+  line-height: 1.7;
+}
+
+/* BLOCK INTRO */
+.s-block { text-align: center; }
+
+.block-num {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.block-num::before,
+.block-num::after {
+  content: '';
+  display: block;
+  width: 24px;
+  height: 1px;
+  background: var(--rule);
+  opacity: 0.5;
+  transition: background 0.4s;
+}
+
+.block-big {
+  font-size: clamp(42px, 5.8vw, 78px);
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 0.95;
+  color: var(--text);
+  margin-bottom: 24px;
+  transition: color 0.4s;
+}
+
+.block-intro {
+  font-size: 15px;
+  font-weight: 300;
+  color: var(--text-2);
+  max-width: 440px;
+  line-height: 1.82;
+  transition: color 0.4s;
+}
+
+/* QUESTION */
+.s-question { align-items: flex-start; }
+
+.q-card {
+  width: 100%;
+  max-width: 680px;
+}
+
+body.light .q-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 40px 44px;
+  box-shadow: 0 2px 28px rgba(27,30,41,0.08), 0 0 0 1px rgba(27,30,41,0.05);
+}
+
+.q-meta {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 18px;
+  transition: color 0.4s;
+}
+
+.q-text {
+  font-size: clamp(20px, 2.4vw, 34px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.28;
+  color: var(--text);
+  margin-bottom: 32px;
+  transition: color 0.4s;
+}
+
+.ctx-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: 1px solid var(--border-2);
+  border-radius: 4px;
+  padding: 7px 14px;
+  font-family: var(--font);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.ctx-btn:hover, .ctx-btn.open {
+  color: var(--text-2);
+  border-color: var(--ctx-bar);
+}
+
+.ctx-chevron {
+  display: inline-block;
+  transition: transform 0.28s var(--ease);
+  font-style: normal;
+  font-size: 11px;
+}
+
+.ctx-btn.open .ctx-chevron { transform: rotate(180deg); }
+
+.ctx-wrap {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.38s var(--ease), margin-top 0.3s ease;
+}
+
+.ctx-wrap.open {
+  max-height: 200px;
+  margin-top: 14px;
+}
+
+.ctx-body {
+  padding: 16px 20px;
+  background: var(--ctx-bg);
+  border-left: 2px solid var(--ctx-bar);
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--text-2);
+  line-height: 1.8;
+  transition: all 0.4s;
+}
+
+/* Key hint: context tip */
+.ctx-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 12px;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--text-3);
+  transition: color 0.4s;
+}
+</style>
+</head>
+<body class="dark">
+
+<!-- Logo -->
+<div class="logo">
+  <span class="logo-dot"></span>
+  Little Lights
+</div>
+
+<!-- Client name (center) -->
+<div class="client-name" id="client-name"></div>
+
+<!-- Theme toggle -->
+<div class="switcher">
+  <button class="sw-btn active" id="sw-dark" onclick="setTheme('dark')">Dark</button>
+  <button class="sw-btn" id="sw-light" onclick="setTheme('light')">Light</button>
+</div>
+
+<!-- Nav arrows -->
+<button class="nav nav-l" onclick="go(-1)" title="Zurück (←)">
+  <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+</button>
+<button class="nav nav-r" onclick="go(1)" title="Weiter (→)">
+  <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+</button>
+
+<!-- Slides container -->
+<div id="slides"></div>
+
+<!-- Progress -->
+<div class="progress" id="prog"></div>
+
+<!-- Counter + key hint -->
+<div class="counter" id="ctr"></div>
+<div class="key-hint" id="keyhint">
+  <span class="kbkey">←</span><span class="kbkey">→</span> navigieren
+  <span style="margin-left:8px" class="kbkey">↑</span><span class="kbkey">↓</span> kontext
+</div>
+
+<script>
+// ── BUILD SLIDES FROM CLIENT DATA ─────────────────────────
+
+const slides = [];
+
+function addSlide(type, content) {
+  slides.push({ type, content });
+}
+
+// Claim
+addSlide('claim', {});
+
+// Presentation slides
+CLIENT.presentation.forEach(p => {
+  if (p.type === 'examples') addSlide('video', p);
+  else addSlide('pres', p);
+});
+
+// Blocks
+CLIENT.blocks.forEach((block, bi) => {
+  addSlide('block', { ...block, num: bi + 1 });
+  block.questions.forEach((q, qi) => {
+    addSlide('question', {
+      ...q,
+      blockTitle: block.title,
+      blockNum: bi + 1,
+      qNum: qi + 1,
+      qTotal: block.questions.length
+    });
+  });
+});
+
+// ── RENDER ────────────────────────────────────────────────
+
+const container = document.getElementById('slides');
+const TOTAL = slides.length;
+
+document.getElementById('client-name').textContent = CLIENT.name;
+
+slides.forEach((s, i) => {
+  const el = document.createElement('div');
+  el.className = 'slide' + (i === 0 ? ' on' : '');
+  el.dataset.i = i;
+
+  switch (s.type) {
+
+    case 'claim':
+      el.classList.add('s-claim');
+      el.innerHTML = `
+        <p class="claim-eyebrow">Social Media Storytelling Workshop</p>
+        <div class="claim-rule"></div>
+        <h1 class="claim-text">
+          We make films for companies that understand<br>the difference between content and
+          <em>stories worth&nbsp;telling.</em>
+        </h1>`;
+      break;
+
+    case 'pres': {
+      const p = s.content;
+      el.classList.add('s-pres');
+      let body = '';
+      if (p.body) body += `<p class="pres-body">${p.body}</p>`;
+      if (p.callout) body += `<div class="pres-callout">${p.callout}</div>`;
+      if (p.example) body += `
+        <p class="pres-example-label">${p.example.label}</p>
+        <div class="pres-example-text">${p.example.content}</div>`;
+      el.innerHTML = `
+        <div class="s-pres-inner">
+          <p class="pres-eyebrow">Präsentation</p>
+          <h2 class="pres-h">${p.headline}</h2>
+          ${body}
+        </div>`;
+      break;
+    }
+
+    case 'video': {
+      const p = s.content;
+      el.classList.add('s-video');
+      const vids = p.examples.map(ex => `
+        <div class="video-item">
+          <p class="video-title">${ex.title}</p>
+          <video class="video-el" src="${ex.video}" controls playsinline preload="metadata"></video>
+          <p class="video-desc">${ex.description}</p>
+        </div>`).join('');
+      el.innerHTML = `
+        <p class="pres-eyebrow" style="margin-bottom:20px">In der Praxis</p>
+        <h2 class="pres-h" style="margin-bottom:24px;max-width:860px">${p.headline}</h2>
+        <div class="video-grid">${vids}</div>`;
+      break;
+    }
+
+    case 'block': {
+      const b = s.content;
+      el.classList.add('s-block');
+      const pad = String(b.num).padStart(2, '0');
+      el.innerHTML = `
+        <p class="block-num">Block ${pad}</p>
+        <h2 class="block-big">${b.title.replace(' & ', ' &amp;<br>')}</h2>
+        <p class="block-intro">${b.intro}</p>`;
+      break;
+    }
+
+    case 'question': {
+      const q = s.content;
+      el.classList.add('s-question');
+      el.innerHTML = `
+        <div class="q-card">
+          <p class="q-meta">Frage ${q.qNum} / ${q.qTotal} &nbsp;&middot;&nbsp; Block ${String(q.blockNum).padStart(2,'0')}: ${q.blockTitle}</p>
+          <h2 class="q-text">${q.question}</h2>
+          <button class="ctx-btn" onclick="toggleCtx(this)">
+            Kontext
+            <em class="ctx-chevron">&#8595;</em>
+          </button>
+          <div class="ctx-wrap">
+            <div class="ctx-body">${q.context}</div>
+          </div>
+        </div>`;
+      break;
+    }
+  }
+
+  container.appendChild(el);
+});
+
+// ── STATE ─────────────────────────────────────────────────
+
+let cur = 0;
+const els = () => document.querySelectorAll('.slide');
+
+function upd() {
+  const pct = ((cur + 1) / TOTAL * 100).toFixed(1) + '%';
+  document.getElementById('prog').style.width = pct;
+  document.getElementById('ctr').textContent = (cur + 1) + ' / ' + TOTAL;
+
+  // hide key hint after slide 3
+  document.getElementById('keyhint').classList.toggle('hidden', cur > 2);
+}
+
+function go(d) {
+  closeCtx();
+  const all = els();
+  all[cur].classList.add('exit');
+  all[cur].classList.remove('on');
+
+  const prev = cur;
+  cur = Math.max(0, Math.min(TOTAL - 1, cur + d));
+
+  setTimeout(() => {
+    all[prev].classList.remove('exit');
+  }, 240);
+
+  all[cur].classList.add('on');
+  upd();
+}
+
+function openCtx() {
+  const btn = els()[cur].querySelector('.ctx-btn');
+  if (btn && !btn.classList.contains('open')) {
+    btn.classList.add('open');
+    btn.nextElementSibling.classList.add('open');
+  }
+}
+
+function closeCtx() {
+  const btn = els()[cur].querySelector('.ctx-btn');
+  if (btn && btn.classList.contains('open')) {
+    btn.classList.remove('open');
+    btn.nextElementSibling.classList.remove('open');
+  }
+}
+
+function toggleCtx(btn) {
+  btn.classList.toggle('open');
+  btn.nextElementSibling.classList.toggle('open');
+}
+
+function setTheme(t) {
+  document.body.className = t;
+  document.getElementById('sw-dark').classList.toggle('active', t === 'dark');
+  document.getElementById('sw-light').classList.toggle('active', t === 'light');
+}
+
+// ── KEYBOARD ──────────────────────────────────────────────
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') { e.preventDefault(); go(1); }
+  if (e.key === 'ArrowLeft')  { e.preventDefault(); go(-1); }
+  if (e.key === 'ArrowDown')  { e.preventDefault(); openCtx(); }
+  if (e.key === 'ArrowUp')    { e.preventDefault(); closeCtx(); }
+});
+
+upd();
+</script>
+</body>
+</html>
